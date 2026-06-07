@@ -38,15 +38,15 @@ representational capacity from reward-based learning.
   \caption{Prior work on VQC-based reinforcement learning in low-dimensional environments.}
   \label{tab:related}
   \footnotesize
-  \begin{tabular}{lp{2.2cm}p{1.5cm}cc}
+  \begin{tabular}{lp{4.2cm}cc}
     \hline
-    Work & Environment & Architecture & DQN? & Variants \\
+    Work & Architecture & DQN? & Variants \\
     \hline
-    Chen et al.~\cite{chen2020vqc} & CartPole, Acrobot & 4--8q, 1--4L & \checkmark & No \\
-    Jerbi et al.~\cite{jerbi2021pqc} & CartPole, FrozenL. & Policy-grad VQC & No & Policy \\
-    Lockwood \& Si~\cite{lockwood2021rl} & CartPole & 4q, 2L & \checkmark & No \\
-    Skolik et al.~\cite{skolik2022quantum} & CartPole, Acrobot & 4q, re-upload & \checkmark & No \\
-    \textbf{This work} & CartPole & 4q, L1/L3 & \checkmark & \textbf{Double, Duel, Distill} \\
+    Chen et al.~\cite{chen2020vqc} & 4--8q, 1--4L (CartPole, Acrobot) & \checkmark & No \\
+    Jerbi et al.~\cite{jerbi2021pqc} & Policy-gradient VQC (CartPole) & No & Policy \\
+    Lockwood \& Si~\cite{lockwood2021rl} & 4q, 2L (CartPole) & \checkmark & No \\
+    Skolik et al.~\cite{skolik2022quantum} & 4q, re-upload (CartPole, Acrobot) & \checkmark & No \\
+    \textbf{This work} & 4q, L1/L3 (CartPole) & \checkmark & \textbf{Double, Duel, Distill} \\
     \hline
   \end{tabular}
 \end{table}
