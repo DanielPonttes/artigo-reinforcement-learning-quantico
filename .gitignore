@@ -6,6 +6,9 @@ outputs/results/
 outputs/checkpoints/
 outputs/videos/
 outputs/figures/*.png
+!outputs/figures/cartpole_screenshot.png
+!outputs/figures/cartpole_l1_eval100_with_baselines.png
+!outputs/figures/vqc_l1_circuit.png
 article/main.pdf
 article/main.aux
 article/main.log
