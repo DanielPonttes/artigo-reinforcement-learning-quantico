@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qrl-vqc-eniac"
+version = "0.1.0"
+description = "Controlled DQN-VQC experiments for an ENIAC 2026 undergraduate paper."
+requires-python = ">=3.10"
+dependencies = [
+  "gymnasium[classic-control]>=1.0.0",
+  "imageio>=2.34",
+  "matplotlib>=3.8",
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "pennylane>=0.40",
+  "pyyaml>=6.0",
+  "torch>=2.7",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

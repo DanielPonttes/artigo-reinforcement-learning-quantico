@@ -1,0 +1,2 @@
+agent,label,seeds,trainable_parameters,train_final_reward_mean,train_final_reward_std,greedy_eval_reward_mean,greedy_eval_reward_std,best_reward_mean,time_sec_mean,wall_time_per_step_sec_mean,final_epsilon_mean
+dqn_mlp,DQN-MLP,1,450,78.9,0.0,98.65,0.0,nan,30.44158218501252,0.0010014012011582897,0.050000000000000044

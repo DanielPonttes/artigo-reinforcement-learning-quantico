@@ -1,0 +1,7 @@
+config,experiment,agent,env,trainable_parameters,all_parameters
+configs/cartpole_mlp.yaml,cartpole_mlp,dqn_mlp,CartPole-v1,44,44
+configs/cartpole_vqc.yaml,cartpole_vqc,dqn_vqc,CartPole-v1,46,46
+configs/cartpole_mlp_pilot.yaml,cartpole_mlp_pilot,dqn_mlp,CartPole-v1,44,44
+configs/cartpole_vqc_pilot.yaml,cartpole_vqc_pilot,dqn_vqc,CartPole-v1,46,46
+configs/cartpole_mlp_emergency.yaml,cartpole_mlp_emergency,dqn_mlp,CartPole-v1,44,44
+configs/cartpole_vqc_emergency.yaml,cartpole_vqc_emergency,dqn_vqc,CartPole-v1,46,46

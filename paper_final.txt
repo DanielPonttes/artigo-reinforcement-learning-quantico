@@ -1,0 +1,667 @@
+A Controlled Study of Variational Quantum Circuits as
+Q-Value Approximators in Deep Q-Learning
+Anonymous Authors
+1
+
+Anonymous Institution
+
+Abstract. This paper reports a controlled study of a hybrid Deep Q-Learning
+agent where the classical Q-network is replaced by a Variational Quantum Circuit (VQC). Focusing on CartPole-v1, we compare a DQN-VQC agent against
+a parameter-matched MLP-DQN baseline (22–23 trainable parameters), and
+evaluate Double DQN and Dueling DQN variants for both model types. At 100
+episodes, both agents collapse below random under a tight epsilon schedule. Extended training to 500 episodes recovers learning in MLP (greedy eval 69.45 in
+one seed) while VQC remains below random, though with high seed variance. A
+batched QNode optimization reduces the VQC simulation overhead from 44× to
+5× relative to MLP. In a separate supervised distillation experiment, the same
+VQC perfectly imitates a fuzzy heuristic controller (500.00 over 3 seeds) with
+descriptive membership features, for both L1 (22 params) and L3 (46 params)
+circuit depths. The contrast highlights a gap between representational capacity
+and what DQN reward signals extract at minimal training budgets.
+Keywords Quantum Reinforcement Learning, Variational Quantum Circuits,
+Deep Q-Learning, CartPole-v1, Dueling DQN, Double DQN
+
+1. Introduction
+Deep Reinforcement Learning (DRL) combines reinforcement learning [Sutton e Barto 2018]
+with function approximation and has become a standard approach for learning control
+policies from interaction data. In Deep Q-Learning (DQN) [Mnih et al. 2015], a neural network is used to approximate action-value functions, making it possible to act in
+environments with continuous or high-dimensional observations. The DQN framework
+has been extended with techniques such as Double Q-Learning [van Hasselt et al. 2016]
+to reduce overestimation bias and Dueling architectures [Wang et al. 2016] to improve
+representation efficiency by separately modeling state values and action advantages.
+In parallel, Variational Quantum Circuits (VQCs), also known as parametrized
+quantum circuits, have been studied as trainable models for near-term quantum machine
+learning. VQCs encode classical data into a quantum state, apply sequences of trainable
+unitary transformations, and extract classical outputs via measurement. Their differentiability through parameter-shift rules or backpropagation [Pérez-Salinas et al. 2020] makes
+them compatible with gradient-based optimization in standard deep learning frameworks.
+Recent work has investigated replacing classical neural networks with VQCs in reinforcement learning [Chen et al. 2020, Jerbi et al. 2021, Skolik et al. 2022]. These studies suggest that VQCs can serve as Q-value approximators in DQN-style algorithms,
+though the conditions under which they offer practical benefits remain unclear, particularly under tight parameter budgets.
+This work evaluates a conservative question: if the Q-network of a DQN agent is
+replaced by a small VQC, and the classical baseline is constrained to a similar number of
+
+trainable parameters, how do the two agents compare in sample efficiency, stability, and
+training time on a simple control task?
+The specific research questions are:
+1. Under a matched parameter budget of approximately 22–23 trainable parameters,
+do DQN-MLP and DQN-VQC agents show statistically distinguishable performance on CartPole-v1?
+2. Do Double DQN and Dueling DQN variants alter the relative ranking between
+classical and quantum Q-functions at this budget?
+3. What is the practical simulation cost of using a VQC as a Q-function approximator, and can batched circuit evaluation reduce this overhead?
+4. To what extent does the representational capacity of small VQC models exceed
+what the DQN reward signal can effectively exploit, as measured by supervised
+distillation from a known-good teacher?
+The goal is not to claim quantum advantage. The experiments are performed with
+a classical simulator and a small number of qubits. Instead, the contribution is a controlled
+implementation and empirical comparison of a DQN-VQC agent against a parametermatched MLP-DQN baseline, including Double and Dueling variants with VQC backends, a batched QNode optimization that substantially reduces simulation overhead, a
+transparent report of negative or inconclusive results, a supervised distillation experiment
+isolating representational capacity from reward-based learning, and a fully reproducible
+codebase with YAML-configurable experiments and comprehensive tests.
+This framing is important because small simulated VQCs are not expected to outperform classical networks in this setting. The relevant question is whether the hybrid
+agent can be integrated into a standard DQN workflow and what practical costs or instabilities appear under a controlled parameter budget. The paper is organized as follows.
+Section 2 reviews background and related work. Section 3 describes the methodology,
+including DQN training, VQC architecture, and DQN variants. Section 4 presents the
+experimental setup. Section 5 reports and discusses the results. Section 6 lists limitations,
+and Section 7 concludes.
+
+2. Background and Related Work
+Reinforcement learning [Sutton e Barto 2018] formalizes sequential decision-making as
+a Markov Decision Process (S, A, P, R, γ), where an agent interacts with an environment
+by observing state s ∈ S, taking action a ∈ A, receiving reward r, and transitioning to
+s′ according to P (s′ |s, a). The objective is to maximize the expected discounted return
+P
+E[ t γ t rt ].
+DQN [Mnih et al. 2015] approximates the optimal action-value function Q∗ (s, a)
+with a neural network Qθ (s, a) trained to minimize the Bellman error: L = E[(r +
+γ maxa′ Qθ− (s′ , a′ ) − Qθ (s, a))2 ], where θ− denotes a periodically updated target network. Key innovations include experience replay and a separate target network to stabilize
+training. Extensions such as Double DQN [van Hasselt et al. 2016] decouple action selection from evaluation by using the policy network for arg max and the target network for
+value estimation, reducing overestimation bias. Dueling DQN [Wang et al. 2016] splits
+the Q-network into separate value V (s) and advantage A(s, a) streams, combining them
+1 P
+′
+as Q(s, a) = V (s) + A(s, a) − |A|
+a′ A(s, a ).
+
+Table 1. Prior work on VQC-based reinforcement learning in low-dimensional
+environments.
+Work
+Chen et al. [Chen et al. 2020]
+
+Lockwood & Si [Lockwood e Si 2021]
+
+Environment
+CartPole, Acrobot,
+MountainCar
+CartPole, FrozenLake
+CartPole
+
+Skolik et al. [Skolik et al. 2022]
+
+CartPole, Acrobot
+
+This work
+
+CartPole
+
+Jerbi et al. [Jerbi et al. 2021]
+
+Architecture
+4–8 qubits, 1–
+4 layers
+Policy gradient VQC
+4 qubits, 2
+layers
+4 qubits, data
+re-uploading
+4
+qubits,
+L1/L3
+
+VQC-DQN
+Yes
+
+Other variants
+No
+
+No
+
+Policy-based
+
+Yes
+
+No
+
+Yes
+
+No
+
+Yes
+
+Double, Dueling, Distill
+
+Variational Quantum Circuits (VQCs) provide a different family of differentiable
+function approximators. A classical input is encoded into a quantum state via feature maps
+(e.g., angle encoding with RY rotations on each qubit), trainable gates transform the state
+through layers of parametrized unitaries, and measurements (typically Pauli-Z expectation
+values) produce classical output features. Data re-uploading [Pérez-Salinas et al. 2020]
+repeats the encoding step at each variational layer, increasing expressivity. VQCs face the
+barren plateau problem [McClean et al. 2018], where gradients vanish exponentially with
+circuit depth in randomly initialized circuits.
+Table 1 summarizes prior work on VQC-based reinforcement learning. The present
+work differs by including Double DQN and Dueling DQN variants with a VQC backend, reporting batched QNode execution as a practical optimization, and including a supervised distillation experiment to isolate representational capacity from reward-based
+learning.
+The VQC-based DQN architecture in this paper follows the angle-encoding plus
+ring-CNOT design common to prior work, with the addition of batched QNode evaluation
+for simulation efficiency and systematic evaluation of DQN variants. The batched QNode
+optimization replaces per-sample circuit calls with a single batched call using PennyLane
+parameter broadcasting, a practical contribution relevant to any VQC-in-the-loop RL simulation.
+
+3. Methodology
+Both agents use the same DQN training loop, summarized below: replay buffer, epsilongreedy exploration, a target network, Adam optimization, and Huber loss (smooth L1) for
+the Bellman error. Observations are normalized before being passed to the Q-network.
+For CartPole-v1, the four state variables are scaled by fixed practical bounds and clipped
+to the interval [−π, π].
+The DQN loop proceeds as follows. After each environment step, the transition
+(s, a, r, s′ , d) is stored in a fixed-capacity replay buffer D. Once |D| ≥ learning starts, a
+minibatch of B transitions is sampled uniformly from D. The Bellman target is yj = rj +
+γ(1−dj ) maxa′ Qθ− (s′j , a′ ) for standard DQN, or yj = rj +γ(1−dj )Qθ− (s′j , arg maxa′ Qθ (s′j , a′ ))
+for Double DQN, where θ− denotes the target network parameters, updated every tarP
+get update steps. The loss is L = B1 j Huber(Qθ (sj , aj ), yj ), minimized via Adam
+
+with gradient clipping. Exploration follows linear ϵ-decay from 1.0 to 0.05.
+The MLP baseline is a single-hidden-layer network. For the main L1 configuration, it uses 3 hidden units, resulting in 23 trainable parameters. This intentionally small
+network was chosen to match the parameter budget of the VQC. For the Dueling variant,
+the network trunk feeds two separate heads: a value head V (s) ∈ R and an advantage
+1 P
+′
+head A(s, ·) ∈ R|A| , which are combined as Q(s, a) = V (s) + A(s, a) − |A|
+a′ A(s, a ).
+VQC Architecture
+The VQC agent uses 4 qubits, angle encoding with RY gates, one or three variational layers, and a ring of CNOT gates. Each variational layer applies a trainable three-parameter
+rotation R(α, β, γ) = RZ(γ)RY (β)RZ(α) to every qubit. The readout extracts Pauli-Z
+expectation values ⟨Zi ⟩ ∈ [−1, 1] for all qubits, yielding a 4-dimensional classical feature
+vector that is then mapped to Q-values by a linear layer. The main VQC configuration has
+4 × 3 = 12 trainable gate parameters plus 4 × 2 + 2 = 10 readout parameters, totaling 22
+trainable parameters. The L3 variant uses three layers (3 × 4 × 3 = 36 gate parameters)
+for 46 total parameters.
+Batched QNode Optimization
+The original implementation evaluated the QNode once per sample in each training batch.
+For a batch of size B, this required B separate calls to the PennyLane QNode, each building a separate automatic differentiation computation graph. We replaced this with a single
+batched call using PennyLane parameter broadcasting: the input tensor of shape [B, 4] is
+zero-padded to [B, 4] → [B, 4] (no padding needed since nqubits = 4) and passed to the
+QNode as [B, nqubits ]. The encoding gate RY (inputs[:, i]) naturally broadcasts across
+the batch dimension, producing expectation values of shape [B, nqubits ] in a single forward pass. This optimization reduced the per-update VQC overhead from O(B) QNode
+calls to O(1).
+Exploration and Feature Modes
+The standard exploration policy is ϵ-random. We also tested a fuzzy-guided exploration
+variant where, with probability ϵ, the action is selected by a fixed fuzzy heuristic a = 1[θ+
+0.25θ̇ + 0.01x + 0.01ẋ > 0] instead of uniformly random. This biases early exploration
+towards higher-reward trajectories without affecting the learned policy evaluation.
+Three observation preprocessing modes are supported. Raw normalized scales and
+clips each state variable. Fuzzy compact adds stability and recommendation scores (not
+used in main results due to action leakage). Fuzzy membership produces four features:
+pole falling left/right (f1 , f2 ) and cart escaping left/right (f3 , f4 ), computed as:
+
+!
+
+−θ
+−θ̇
+, 0, 1 ,
+f1 = clip
++
+θmax θ̇scale
+
+f2 = clip
+
+θ
+θmax
+
++
+
+θ̇
+θ̇scale
+
+!
+
+, 0, 1
+
+(1)
+
+[width=0.95]../outputs/figures/vqcl 1c ircuit.png
+Figure 1. VQC architecture with RY angle encoding, 1 layer of R(α, β, γ) rotations, ring CNOT entanglement, and Pauli-Z readout. Black circles indicate
+qubits.
+
+
+f3 = clip
+
+−x
+−ẋ
++
+, 0, 1 ,
+xmax ẋscale
+
+
+
+
+f4 = clip
+
+x
+xmax
+
++
+
+ẋ
+ẋscale
+
+
+
+, 0, 1
+
+(2)
+
+These features describe the state’s risk profile without encoding a recommended
+action.
+Fuzzy-Teacher Distillation
+In addition to the DQN experiments, we include a separate fuzzy-teacher distillation experiment. A fixed CartPole fuzzy heuristic [Sutton e Barto 2018] labels N uniformly sampled states with a reference action. The small MLP or VQC is trained as a classifier to
+P
+teacher
+imitate this teacher via cross-entropy loss Ldistill = − N1 N
+|si ). This exi=1 log Pθ (ai
+periment uses the same model architectures (MLP with 3 hidden units, VQC with 4 qubits
+and 1 or 3 layers) as the DQN experiments, but substitutes the RL training objective with
+supervised policy cloning. We evaluate two input representations: raw normalized state
+and fuzzy membership. The purpose is to test whether the same low-parameter models
+can represent a useful control policy under an easier optimization signal, thereby isolating
+the effect of the training objective (reward-based DQN vs. supervised distillation).
+
+4. Experimental Setup
+The experiments use CartPole-v1 from Gymnasium. The observation space has 4 continuous variables (cart position, cart velocity, pole angle, pole angular velocity) and the
+action space has 2 discrete actions (push left, push right). Episodes terminate when the
+pole angle exceeds ±12◦ , the cart position exceeds ±2.4, or 500 steps are reached. The
+reward is +1 per step, making the maximum episode return 500.
+Both agents use the hyperparameters listed in Table 2.
+We evaluate eight main configurations, summarized in Table 3.
+All configurations use 3 seeds (0, 1, 2). The 100-episode configurations use ϵ decay over 800 environment steps, which with approximately 10–20 steps per early episode
+means epsilon reaches 0.05 within the first 40–80 episodes. The extended 500-episode
+runs use proportionally scaled decay over 4000 steps.
+The classical MLP was executed with PyTorch on an NVIDIA GeForce RTX 5090
+(GPU). The VQC was simulated with PennyLane default.qubit backend on CPU.
+The timing comparison therefore conflates GPU-vs-CPU and PyTorch-vs-simulator overheads; reported VQC time multipliers should be interpreted as upper bounds on the simulation cost. The software stack used PyTorch 2.12.0+cu130, Gymnasium 1.3.0, and
+PennyLane 0.45.0.
+The distillation experiments use the same model architectures trained with crossentropy loss over 20 epochs with 512 sampled states (or 50 epochs with 1024 samples
+
+Table 2. Shared DQN hyperparameters for all configurations.
+
+Hyperparameter
+Value
+Discount factor (γ)
+0.99
+Learning rate
+0.001
+Optimizer
+Adam
+Batch size
+16
+Replay buffer size
+50,000
+Target update interval
+100 steps
+Learning starts
+16 steps
+Epsilon start
+1.0
+Epsilon end
+0.05
+Gradient clipping norm
+10.0
+Loss function
+Smooth L1 (Huber)
+Greedy evaluation episodes
+20
+Log interval
+10 episodes
+Table 3. Experimental configurations. MLP-L1 uses 3 hidden units (23 params).
+VQC-L1 uses 1 layer (22 params). VQC-L3 uses 3 layers (46 params). Dueling variants add value/advantage split; Double variants add Double DQN.
+Configuration
+Standard
+Dueling
+Double-Dueling
+Extended
+
+Agent
+MLP-L1 / VQC-L1
+MLP-L1 / VQC-L1
+MLP-L1 / VQC-L1
+MLP-L1 / VQC-L1
+
+Episodes
+100
+100
+100
+500
+
+ϵ decay
+800 steps
+800 steps
+800 steps
+4000 steps
+
+for the MLP raw distill run, as noted in Table 7). The fuzzy teacher heuristic is a =
+1[θ + 0.25θ̇ + 0.01x + 0.01ẋ > 0], which achieves 500.00 reward as a policy but is used
+here only as a labeling source.
+The reported metrics are reward per episode, final mean reward over the last
+20 training episodes (or last 10 for extended runs), greedy evaluation reward over 20
+episodes, trainable parameter count, and wall-clock training time. Random (at ∼ U nif orm(A))
+and heuristic (the same fuzzy rule used as the teacher) policies are included as nonlearning reference baselines.
+The complete codebase is organized as a Python package under src/qrl/ with
+modules for agents (replay buffer), environments (preprocessing), models (MLP, VQC,
+factory), training (DQN loop, experiment runner), and utilities (seeding, parameter counting). Experiments are configured via YAML files and executed through scripts/train.py
+with CLI overrides for rapid exploration. All figures and tables are reproducible from the
+YAML configs and output CSV/JSON artifacts. The test suite comprises 24 tests covering model forward passes, preprocessing, replay buffer, epsilon scheduling, fuzzy actions,
+and dueling architectures.
+
+5. Results and Discussion
+Table 4 shows that the main comparison keeps the trainable parameter counts closely
+matched. The MLP uses 23 trainable parameters, while the VQC uses 22.
+
+Table 4. Trainable parameter counts for the main L1 comparison.
+
+Agent
+Trainable parameters
+DQN-MLP
+23
+DQN-VQC
+22
+
+All parameters
+23
+22
+
+[width=0.95]../outputs/figures/cartpolel 1e val100w ithb aselines.png
+Figure 2. Learning curves on CartPole-v1 with random and heuristic reference
+policies.
+
+Table 5 summarizes the main results over 3 seeds. At 100 episodes with approximately 22–23 trainable parameters, both learned agents scored below the random-policy
+baseline (20.65 ± 2.01) in greedy evaluation. DQN-MLP reached 9.42 ± 0.20 and DQNVQC reached 9.45 ± 0.18. Inspection of the learning curves and per-episode rewards
+confirms that both agents collapsed to a near-deterministic single-action policy, which
+explains the sub-random performance: a constant-action policy on CartPole-v1 survives
+approximately 9 steps, while a random policy alternates actions and survives approximately 20 steps. The heuristic controller reached the maximum score of 500.00 and is
+included only as a ceiling reference, not as a learned agent.
+We identify the exploration schedule as a key driver of this collapse. At 100
+episodes with these model sizes, the total number of environment steps is approximately
+1200, and the epsilon decay reaches its minimum after 800 steps. This means the agent
+spends the final third of training with ϵ = 0.05, effectively locked into its exploratoryphase policy. We confirm this by extending training to 500 episodes with a proportionally
+scaled epsilon schedule (decay over 4000 steps). One MLP seed out of three reached a
+greedy evaluation of 69.45, while the other two remained at approximately 9.3. VQC
+runs over 500 episodes showed modest improvement (up to 13.95) but remained below
+random in all cases.
+These results suggest that under the 22–23 parameter budget, final policy quality
+is dominated by the exploration schedule, training length, and random seed rather than
+by the classical-vs-quantum choice. Short training runs with tight epsilon schedules are
+particularly fragile for small models.
+Table 6 reports the Double DQN and Dueling DQN variants under the same L1
+budget and 100-episode training. Neither Double DQN nor Dueling improved greedy
+evaluation performance in this short training regime. All variants scored approximately
+9.25–9.65, similar to the standard DQN baseline. The Dueling architecture increased
+the parameter count from 23 (MLP) / 22 (VQC) to 27 each due to the split value and
+advantage heads. The identical performance between standard, Dueling, and DoubleDueling VQC configurations (9.42 ± 0.20 in all three) reflects the collapse to a singleaction deterministic policy, which is unaffected by the value-decomposition or decoupledestimation improvements.
+Computational cost and batched QNode optimization
+The main practical difference between MLP and VQC is computational cost. The parametermatched MLP runs took 1.72 seconds on average, while the simulated VQC runs with
+
+Table 5. Main CartPole-v1 results over 3 seeds. Learned agents evaluated greedily for 20 episodes after training. Extended runs use epsilon decay over
+4000 steps.
+
+Configuration
+Random
+Heuristic
+MLP 100 eps
+VQC 100 eps
+MLP 500 eps
+VQC 500 eps
+
+Params
+Greedy eval
+– 20.65 ± 2.01
+– 500.00 ± 0.00
+23
+9.42 ± 0.20
+22
+9.45 ± 0.18
+23 29.38 ± 34.77
+22
+11.52 ± 2.20
+
+Time (s)
+–
+–
+1.72
+9.55
+9.60
+62.61
+
+Seeds improving
+–
+–
+0/3
+0/3
+1/3
+0/3
+
+Table 6. Double DQN and Dueling DQN results over 3 seeds and 100 episodes.
+All values are greedy evaluation means ± standard deviation over 20
+episodes.
+
+Configuration
+MLP Dueling
+MLP Double-Dueling
+VQC Dueling
+VQC Double-Dueling
+
+Trainable params
+27
+27
+27
+27
+
+Greedy eval
+9.25 ± 0.09
+9.25 ± 0.09
+9.42 ± 0.20
+9.42 ± 0.20
+
+Time (s)
+1.94
+2.00
+9.55
+9.73
+
+the original per-sample QNode evaluation took 75.97 seconds on average. After implementing PennyLane parameter broadcasting for batched circuit evaluation (replacing
+the per-sample QNode loop in quantum features with a single batched call using qml.RY(inputs[:, wire], wires=wire)), VQC runs dropped to approximately 9.55 seconds on average. The per-environment-step cost was approximately
+0.0014 seconds for the MLP and 0.008 seconds for the batched VQC. While still approximately 5× slower than MLP, this represents a significant improvement over the original
+44× gap and demonstrates the importance of batched quantum circuit evaluation in RL
+settings, where the Q-network forward pass is called with minibatch sizes of 16 during
+each DQN update.
+Fuzzy-teacher distillation
+Table 7 reports fuzzy-teacher distillation scenarios. In this setting, the small models are
+not trained from reward alone; instead, they imitate a fixed fuzzy heuristic controller via
+supervised cross-entropy loss.
+With raw normalized inputs, the behavior diverges sharply by model class. The
+MLP reaches 500.00 (though under extended 50-epoch training, not the standard 20epoch protocol used elsewhere in the table), while the VQC achieves only 96.53 ± 38.13
+— well below the teacher and not above random in some seeds. This suggests that with
+raw features the VQC suffers from a representational bottleneck that the MLP does not,
+at least under supervised optimization.
+With the descriptive fuzzy membership representation, the L1 VQC reaches 500.00
+± 0.00 over 3 seeds with 22 trainable parameters. We additionally tested VQC L3 (three
+variational layers, 46 parameters) with fuzzy membership features and confirmed the
+same 500.00 ± 0.00 across 3 seeds. The MLP with fuzzy membership reaches a lower
+
+Table 7. Reward-trained and fuzzy-teacher scenarios over 3 seeds. Distillation
+rows are supervised policy imitation, not DQN training from reward.
+
+Configuration
+MLP L1 raw distill∗
+MLP L1 fuzzy mb. distill
+VQC L1 raw distill
+VQC L1 fuzzy mb. distill
+VQC L3 fuzzy mb. distill
+∗
+
+Params
+Greedy eval
+23
+500.00 ± 0.00
+23 440.72 ± 102.68
+22
+96.53 ± 38.13
+22
+500.00 ± 0.00
+46
+500.00 ± 0.00
+
+Epochs
+50
+20
+20
+20
+20
+
+Type
+Supervised
+Supervised
+Supervised
+Supervised
+Supervised
+
+MLP raw distill used 50 epochs and 1024 samples (vs. 20 epochs / 512 samples for other rows).
+
+and noisier 440.72 ± 102.68 with high variance, meaning 1 of 3 seeds failed under the
+standard 20-epoch protocol.
+These results should be interpreted carefully. The fuzzy membership features provide a domain-informed representation where the classification problem becomes nearlinearly separable. Under this representation, the VQC bridges the gap between raw
+features and the teacher policy. Under raw features, the VQC fails even in supervised
+distillation, indicating that its raw-input representational capacity is insufficient at this
+circuit depth and qubit count. In contrast, the classical MLP with the same raw features
+and extended training reaches the teacher, suggesting a raw-feature learning advantage
+for the classical model.
+The key insight is that the DQN failure on raw features is partly a reward-signal
+extraction problem, but for the VQC specifically, it also reflects a raw-feature representational limitation confirmed by the distillation control. The distillation results therefore
+measure representation quality, not DQN learning from reward, and should not be interpreted as quantum advantage.
+Per-seed analysis
+The extended 500-episode runs reveal substantial seed dependence. MLP seed 0 shows
+a distinct learning trajectory: reward increases qualitatively after episode 300, with the
+final 10 training episodes averaging 162.30 and the greedy evaluation reaching 69.45
+over 17,646 environment steps. Seeds 1 and 2 remain at approximately 9.3 (6,160–6,265
+steps), indicating policy collapse. The VQC run showed uniformly poor performance
+across seeds (greedy 9.65–13.95, 7,100–8,500 steps). The divergence in step counts is informative: agents that learn to balance accumulate steps, while collapsed agents terminate
+early.
+The interaction between ϵ decay and random seed is central. For MLP seed 0,
+the 4000-step decay provides ϵ > 0.5 for approximately 2000 steps (100–150 episodes),
+during which the agent can discover reward-bearing trajectories. Seeds where exploration
+fails to encounter balancing strategies before ϵ tightens are permanently trapped. This
+dynamic is amplified for the VQC, where the quantum circuit’s gradient landscape may
+make recovery from poor exploratory policies even harder.
+The consistency of the collapse pattern — both agents across all DQN variants
+(standard, Dueling, Double-Dueling) reach identically poor greedy evaluation scores at
+100 episodes — supports the conclusion that neither the classical vs. quantum choice nor
+
+the specific DQN variant matters at this budget. What matters is the interaction between
+the ϵ schedule and the small model’s sensitivity.
+Practical implications
+The batched QNode result is the most actionable finding for practitioners. Reducing perupdate overhead from O(B) to O(1) QNode calls narrows the MLP–VQC wall-clock gap
+from 44× to 5× on CPU simulation. For a B = 16 minibatch, this means 16 QNode calls
+per update become 1 call — directly reducing the dominant cost of VQC-in-the-loop RL.
+In environments with larger state spaces or deeper circuits, this gain scales linearly with
+batch size.
+The distillation results reveal a sharp interaction between representation and model
+class that is independent of the RL training objective. Under raw features, the MLP can
+learn the fuzzy policy (with sufficient supervised epochs) while the VQC cannot. Under
+engineered fuzzy membership features, the VQC learns it perfectly while the MLP shows
+high variance. This asymmetry — MLP wins on raw, VQC wins on fuzzy membership —
+suggests that the two model classes exploit different aspects of the input representation,
+which could guide future feature-engineering strategies for quantum RL.
+The negative DQN results are valuable for calibrating expectations. A 22-parameter
+VQC in a standard DQN pipeline, with standard hyperparameters and a modest epsilon
+schedule, does not learn CartPole within 500 episodes. This is not a claim that VQCs
+cannot learn CartPole at all — larger circuits, different hyperparameters, or alternative
+training strategies may succeed. Rather, it is evidence that the out-of-the-box combination of a small VQC with standard DQN training is insufficient, and that practitioners
+should expect to invest in hyperparameter tuning, exploration strategies, or representation
+engineering to bridge the gap.
+
+6. Limitations
+This study has several limitations. First, the VQC was simulated classically; therefore,
+wall-clock time does not represent execution on quantum hardware. Second, the experiment uses only CartPole-v1 and a small number of seeds (3) due to the submission timeline; higher seed counts (5–10) would provide more robust statistics, particularly given
+the high seed variance observed in extended training runs. Third, the parameter budget
+is extremely small, which makes the comparison controlled but also limits the representational capacity of both agents. In the main experiment, both learned agents perform
+below a random policy, so the results characterize a failure regime rather than a successful
+policy-learning regime. Fourth, only a shallow VQC (L1) is used in the main experiment.
+Deeper circuits may be more expressive, but they also increase simulation cost and may
+suffer from barren plateaus [McClean et al. 2018] in gradient-based optimization. Fifth,
+the timing comparison between MLP (GPU) and VQC (CPU) conflates hardware and
+simulation overheads; the reported VQC time multipliers should be interpreted as upper
+bounds, not as precise quantum-vs-classical scaling.
+The results should therefore be interpreted as a small controlled empirical study,
+not as evidence for or against quantum advantage in reinforcement learning.
+The fuzzy-teacher distillation experiment has a different status from the DQN experiments. It demonstrates that small models, including a VQC, can imitate a useful
+
+fuzzy controller when aided by domain-informed fuzzy membership features, but under
+raw features the VQC fails even in supervised optimization. Therefore, the distillation
+results measure representation quality under structured features, not DQN learning from
+reward. The fuzzy membership representation avoids direct action-recommendation encoding, but it is still a domain-informed representation and should be reported as such.
+
+7. Conclusion
+This paper implemented and evaluated a DQN-VQC agent against a parameter-matched
+MLP-DQN baseline on CartPole-v1. We summarize the main findings against the four
+research questions posed in Section 1.
+RQ1 (Parameter-matched comparison). Under a 22–23 parameter budget and
+100 training episodes, DQN-MLP and DQN-VQC are statistically indistinguishable (both
+≈ 9.4 greedy evaluation, below the random baseline of 20.65). Neither learned the task.
+Extending training to 500 episodes with a scaled ϵ schedule recovered learning in 1 of 3
+MLP seeds (greedy 69.45) while VQC remained below random in all seeds.
+RQ2 (DQN variants). Double DQN and Dueling DQN did not improve outcomes
+at 100 episodes. All variants collapsed to the same single-action deterministic policy. The
+Dueling architecture increased parameter counts marginally (23 → 27 for MLP, 22 → 27
+for VQC) without measurable benefit. This confirms that the training budget, not the
+value-estimation technique, dominates results at this scale.
+RQ3 (Simulation cost). Batched QNode execution via PennyLane parameter
+broadcasting reduced the VQC simulation overhead from 44× to 5× relative to MLP.
+While VQC simulation remains more expensive than the classical equivalent, this optimization demonstrates that per-update circuit evaluation overhead can be substantially
+reduced through batching. The 5× multiplier should be interpreted as an upper bound on
+a CPU simulator; it conflates GPU-vs-CPU and PyTorch-vs-simulator overheads.
+RQ4 (Representational capacity vs. reward extraction). The supervised distillation experiments reveal that representational adequacy depends on the input representation and model class. Under raw features, the MLP can learn the fuzzy policy (500.00
+with extended training) while the VQC cannot (96.53). Under engineered fuzzy membership features, the VQC perfectly imitates the teacher at both L1 (22 params) and L3 (46
+params) depths, while the MLP shows high variance (440.72 ± 102.68). The VQC can
+therefore represent a useful control policy when the input features are well-structured and
+the optimization signal is supervised. The DQN failure on raw features thus reflects both a
+VQC representational limitation under raw inputs and a general reward-signal extraction
+difficulty at this training budget.
+The results carry several messages for future work. First, practitioners building
+VQC-DQN pipelines should implement batched QNode evaluation, as it provides a significant and implementationally straightforward speedup. Second, the exploration schedule deserves careful tuning: the ϵ-decay-vs-steps ratio is critical for small-capacity agents
+and should be treated as a primary hyperparameter, not an afterthought. Third, representation engineering (including domain-informed feature maps) appears to matter more
+than model architecture or DQN variant choice at this scale. Fourth, future studies should
+increase seeds to 5–10 and extend to additional environments (e.g., Acrobot, MountainCar) to test the generality of these findings. Finally, hybrid training strategies combining
+
+reward-based DQN with fuzzy-guided exploration or curriculum learning remain an open
+direction for bridging the gap between representational capacity and effective learning.
+
+References
+Chen, S. Y.-C., Yang, C.-H. H., Qi, J., Chen, P.-Y., Ma, X., e Goan, H.-S. (2020). Variational quantum circuits for deep reinforcement learning. IEEE Access, 8:141007–
+141024.
+Jerbi, S., Gyurik, C., Marshall, S., Briegel, H. J., e Dunjko, V. (2021). Parametrized quantum policies for reinforcement learning. In Advances in Neural Information Processing
+Systems (NeurIPS).
+Lockwood, O. e Si, M. (2021). Reinforcement learning with quantum variational circuit.
+In AAAI Workshop on AI for Science.
+McClean, J. R., Boixo, S., Smelyanskiy, V. N., Babbush, R., e Neven, H. (2018). Barren
+plateaus in quantum neural network training landscapes. Nature Communications,
+9:4812.
+Mnih, V., Kavukcuoglu, K., Silver, D., Rusu, A. A., Veness, J., Bellemare, M. G., Graves,
+A., Riedmiller, M., Fidjeland, A. K., Ostrovski, G., Petersen, S., Beattie, C., Sadik, A.,
+Antonoglou, I., King, H., Kumaran, D., Wierstra, D., Legg, S., e Hassabis, D. (2015).
+Human-level control through deep reinforcement learning. Nature, 518:529–533.
+Pérez-Salinas, A., Cervera-Lierta, A., Gil-Fuster, E., e Latorre, J. I. (2020). Data reuploading for a universal quantum classifier. Quantum, 4:226.
+Skolik, A., Jerbi, S., e Dunjko, V. (2022). Quantum agents in the gym: a variational
+quantum algorithm for deep Q-learning. Quantum, 6:720.
+Sutton, R. S. e Barto, A. G. (2018). Reinforcement Learning: An Introduction. MIT Press,
+2nd edition.
+van Hasselt, H., Guez, A., e Silver, D. (2016). Deep reinforcement learning with double
+Q-learning. In AAAI Conference on Artificial Intelligence.
+Wang, Z., Schaul, T., Hessel, M., van Hasselt, H., Lanctot, M., e de Freitas, N. (2016).
+Dueling network architectures for deep reinforcement learning. In International Conference on Machine Learning (ICML).
+
+

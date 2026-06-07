@@ -1,0 +1,8 @@
+gymnasium[classic-control]>=1.0.0
+imageio>=2.34
+matplotlib>=3.8
+numpy>=1.26
+pandas>=2.2
+pennylane>=0.40
+pyyaml>=6.0
+torch>=2.7

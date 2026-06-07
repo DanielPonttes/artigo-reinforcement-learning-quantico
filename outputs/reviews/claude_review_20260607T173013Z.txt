@@ -1,0 +1,111 @@
+I now have a complete picture. Let me write the review.
+
+---
+
+# External Review — *A Controlled Study of Variational Quantum Circuits as Q-Value Approximators in Deep Q-Learning*
+
+**Reviewer role:** External reviewer, ENIAC 2026 undergraduate track
+**Reviewed:** `article/` (all sections), `src/qrl/` (training, models, preprocessing), configs, and result tables.
+
+---
+
+## Verdict: **Weak, but defensible if reframed and one core experiment is fixed.**
+
+The honesty is genuinely a strength — no quantum-advantage overclaim, baselines present, negative results reported, simulation cost flagged. For an undergraduate track, a clean "we built a hybrid DQN-VQC pipeline and report a controlled cost/viability study with negative results" is a legitimate paper.
+
+**But there is one problem that, left unaddressed, justifies rejection on its own:** your headline result ("both learned agents collapse *below random*") is almost certainly a **training artifact, not a property of small VQCs/MLPs** — and your own config files prove it. This is the thing a sharp reviewer will catch, and it undermines the central narrative. Fix the framing around it and the paper becomes defensible. Leave it as-is and a reviewer concludes "the authors mis-trained their agents and then drew a conclusion from the failure."
+
+Let me justify that bluntly.
+
+---
+
+## The core problem: the "below random" result is a tuning artifact
+
+Your main config `cartpole_mlp_l1_eval100.yaml` has:
+- `hidden_sizes: [3]` (23 params)
+- `epsilon_decay_steps: 800`
+
+CartPole episodes when the policy is bad are ~10–20 steps, so 100 episodes ≈ 1000–2000 environment steps total. With ε decaying to 0.05 by step **800**, the agent stops exploring roughly a third of the way through training and then spends the rest of training (and *all* of greedy eval) locked into a 3-unit network that has collapsed onto a **single action**. A constant-action greedy policy on CartPole scores ~9 steps; random scores ~20. That is exactly your 9.4-vs-20.6 gap, and the tiny std (±0.20) confirms a near-deterministic degenerate policy. This is policy collapse, not "small models can't represent the task."
+
+Your own files contradict the headline:
+- `cartpole_emergency` (`hidden_sizes: [6]`, `epsilon_decay_steps: 10000`) → final reward **22.0 ± 2.4** at only 50 episodes, *above* random.
+- `fuzzy_optimized_combined_summary` → DQN-MLP greedy eval **225 ± 245**, DQN-VQC **232 ± 217**.
+
+So whether the agent "collapses below random" or reaches ~225 is governed by the ε schedule and a couple of hidden units — i.e., hyperparameters — not by the quantum/classical choice or the 22-param budget per se. **A linear Q-function over 4 normalized CartPole inputs (≈10 params) is already enough to balance the pole.** 22 parameters is not inherently too few; the training recipe is the bottleneck.
+
+**Why this matters for the verdict:** the paper currently draws a qualitative conclusion ("characterizes a failure regime") from what is really a poorly-tuned baseline. A reviewer who reads your configs will not trust the comparison. You must either (a) re-tune both agents to their honest best at the fixed budget and report *that* comparison, or (b) explicitly reframe the collapse as a **sensitivity finding** ("at this budget, outcome is dominated by the exploration schedule, not the function approximator") and back it with a small sweep.
+
+---
+
+## Secondary correctness / consistency flags
+
+1. **Suspiciously identical VQC numbers across variants.** In Table `results-new`, VQC standard, VQC Dueling, and VQC Double-Dueling all report **9.42 ± 0.20** to two decimals — identical to the standard VQC in the main table. Either all variants collapse to the exact same degenerate policy (plausible, but then say so explicitly) or numbers were carried over. Verify and state which.
+
+2. **Numbers drift across tables for the "same" run.** `cartpole_main_eval_summary` (MLP final 9.57) vs `cartpole_l1_eval100_with_baselines` (MLP final 9.77) vs `cartpole_l1_final100` (11.58). These look like different runs/configs feeding tables that the prose treats as one result. Pin down a single canonical run per claim and regenerate all tables from it; mismatches like this are easy reviewer ammunition.
+
+3. **Fuzzy-membership "positive result" is near-leakage.** `_cartpole_fuzzy_membership_4` encodes `pole_left/pole_right/cart_left/cart_right`. "Pole is falling right" is essentially the action signal (push right). The claim "does not include a recommended action" is technically true but practically thin — the representation makes the task near-linearly-separable, which is why the **MLP also reaches 440** and the VQC reaching 500 is *not* VQC-specific. Keep the result, but state plainly: this measures *representation* quality, not model class, and it is supervised distillation, not RL. You already half-say this; make it unambiguous and stop calling it "the strongest positive result in the study" without that qualifier in the same breath.
+
+4. **Sanity check is 1 seed and doesn't solve.** 450 params / 300 episodes / **1 seed** → greedy 98.65 (and train final 78.9). It supports "pipeline learns," but a single seed reaching <100/500 is weak evidence. Run 3 seeds; it's cheap (~30s each).
+
+5. **`references.bib` is empty / citations are TODOs.** `\bibliography` is commented out, Related Work ends with `% TODO: add verified citations`. This is an automatic desk-reject risk. A QRL paper with zero citations to the VQC-RL literature (e.g., the data-reuploading and VQC-policy lines of work) is not submittable. Non-negotiable must-fix.
+
+6. **Template.** Still `article` class with `% TODO: substituir pelo template oficial SBC`. Must be on the official template before submission.
+
+---
+
+## Must-fix items before submission (blocking)
+
+1. **Re-tune the main comparison or reframe the collapse.** Fix `epsilon_decay_steps` to actually cover training (e.g., decay over a realistic fraction of total steps, or specify in episodes), and report each agent's honest best at the matched budget. If you keep the negative result, support it with a small ε-schedule sweep so it reads as a finding, not a mistake. *(This is the verdict-determining item.)*
+2. **Add real citations** and uncomment the bibliography. Cite the VQC-as-Q-approximator / data-reuploading / parameter-matched-baseline prior work you allude to in Related Work.
+3. **Switch to the official SBC/ENIAC template.**
+4. **Make all tables traceable to one canonical run per claim** and resolve the cross-table number drift (item 2 above).
+5. **Re-run the sanity MLP with 3 seeds.**
+6. **State the dueling/double identical-number situation** explicitly (verify it's real collapse, not a copy error).
+
+---
+
+## Experiment priority list (benefit vs. cost)
+
+Ordered by ROI. All are cheap given your batched QNode (~9.5s/VQC run, ~2s/MLP run).
+
+| # | Experiment | Why it matters | Approx. cost |
+|---|---|---|---|
+| **1** | **ε-schedule + training-length fix, then re-run main MLP & VQC, 3 seeds** | Removes the collapse artifact; turns the headline from "we mis-trained" into a defensible comparison. **Highest priority.** | ~1–2 min MLP, ~10–15 min VQC |
+| **2** | **Extended training: 500 episodes, both agents, 3 seeds** | Shows the budget effect honestly; lets you plot "performance vs. episodes." The prompt explicitly allows this. | ~10 min MLP, ~1–1.5 h VQC |
+| **3** | **ε-decay sweep (e.g., 3 values) at fixed budget** | Converts the fragility into a *result*: "outcome dominated by exploration schedule." Directly rehabilitates your negative finding. | ~30–45 min total |
+| **4** | **L=3 VQC vs L=1 VQC (reward RL, matched-ish to MLP)** | The depth/expressivity question is the natural QRL contribution; currently only present in distillation. | ~30–45 min |
+| **5** | **Sanity MLP → 3 seeds** | Cheap credibility fix. | ~2 min |
+| **6** | **More seeds (5) on the final main comparison** | 3 seeds with these variances is thin; 5 is the minimum a reviewer expects. | proportional |
+
+Do **not** add a second environment under deadline (your prior reviews agree — I concur). Depth and training-length are higher value than breadth here.
+
+---
+
+## Suggested paper framing
+
+Drop "failure regime" as the organizing idea. Reframe as **two clean, modest contributions**:
+
+1. **A controlled cost study.** "We integrate a VQC as a DQN Q-approximator and quantify the *simulation* cost of doing so, including a batched-QNode optimization that cuts the per-step overhead ~3.4×, narrowing the VQC↔MLP wall-clock gap from ~44× to ~5×." This is real, reproducible, and genuinely useful engineering content — lean into it. The batching result is arguably your most solid quantitative contribution; give it a figure.
+
+2. **A sensitivity finding at tiny budgets.** "At a ~22-parameter budget on CartPole, final policy quality is dominated by the exploration schedule and training length rather than by the classical-vs-quantum choice; VQC and MLP are statistically indistinguishable in return while VQC costs ~5× more to simulate." That is honest, supported, and avoids the trap of claiming the models "can't learn."
+
+Then position fuzzy distillation as a clearly-labeled **side experiment**: "structured priors let compact models (both VQC and MLP) represent useful controllers" — explicitly *representation*, *supervised*, *not RL, not quantum-specific*.
+
+The through-line: **"We are not claiming advantage; we are measuring what it costs and what actually drives outcomes when you bolt a VQC into a standard DQN."** That sentence is defensible and the whole paper should serve it.
+
+---
+
+## Presentation recommendations
+
+- **Lead the abstract with the cost/sensitivity contribution, not "below random."** "Below random" sounds like a bug to a skimming reviewer; "outcome is schedule-dominated; VQC costs 5× more for equal return" sounds like a finding.
+- **Add a learning-curve figure with episodes on the x-axis to 500** (item 2) overlaid with random/heuristic bands. This single plot does more than the three near-identical small tables.
+- **Collapse your ~6 result tables into 2.** One main comparison table (MLP/VQC/random/heuristic: params, return, greedy eval, time, seeds) and one fuzzy-distillation table. The current proliferation invites the cross-table inconsistencies noted above.
+- **Give the batched-QNode result its own small bar/table** (before vs after, per-step time) — it's your most concrete win.
+- **In the VQC circuit figure caption,** state qubits/layers/encoding/readout and the parameter count so it's self-contained.
+- **Report ddof and seed count in every table caption.** With 3 seeds, also consider showing per-seed points, not just mean±std.
+- **State the heuristic baseline's role once, clearly** — it's a ceiling reference, not a learned competitor; right now it visually dominates tables and can confuse.
+
+---
+
+### Bottom line
+The project is honest and the engineering (batched QNode, expanded tests, Double/Dueling implementations) is solid undergraduate work. It is **not currently submittable** because (a) the central empirical claim is a tuning artifact your own configs disprove, and (b) it has no citations and the wrong template. Fix experiment #1, add citations + template, reframe around cost/sensitivity, and you have a respectable, defensible ENIAC undergraduate paper. The path there is roughly a day of compute and writing, not a redesign.

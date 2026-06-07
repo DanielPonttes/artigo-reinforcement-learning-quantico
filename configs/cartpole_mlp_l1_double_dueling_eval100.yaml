@@ -1,0 +1,22 @@
+experiment: cartpole_mlp_l1_double_dueling_eval100
+env_id: CartPole-v1
+agent: dqn_mlp
+seeds: [0, 1, 2]
+episodes: 100
+evaluation_episodes: 20
+gamma: 0.99
+learning_rate: 0.001
+batch_size: 16
+learning_starts: 16
+buffer_size: 50000
+target_update_interval: 100
+epsilon_start: 1.0
+epsilon_end: 0.05
+epsilon_decay_steps: 800
+gradient_clip_norm: 10.0
+log_interval_episodes: 10
+double_dqn: true
+model:
+  hidden_sizes: [3]
+  dueling: true
+outputs_dir: outputs

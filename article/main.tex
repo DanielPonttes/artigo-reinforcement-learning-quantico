@@ -1,0 +1,62 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
+
+\title{A Controlled Study of Variational Quantum Circuits as Q-Value Approximators in Deep Q-Learning}
+
+\author{Anonymous Authors}
+
+\address{Anonymous Institution}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper reports a controlled study of a hybrid Deep Q-Learning agent where
+the classical Q-network is replaced by a Variational Quantum Circuit (VQC).
+Focusing on CartPole-v1, we compare a DQN-VQC agent against a parameter-matched
+MLP-DQN baseline (22--23 trainable parameters), and evaluate Double DQN and
+Dueling DQN variants. Both agents collapse below a random baseline at 100
+episodes across 5 seeds, even with a widened exploration schedule, ruling out
+epsilon decay as the sole cause. Extended 500-episode training recovers partial
+learning in 1 of 3 MLP seeds (greedy eval 69.45) while VQC remains below random.
+A batched QNode optimization reduces VQC simulation overhead from 44$\times$ to
+5$\times$. Under matched supervised distillation, the MLP perfectly imitates a
+CartPole heuristic from raw features (500.00, 5 seeds), while the VQC L1 does not
+(96.53). With fuzzy membership features, the VQC reaches 500.00 in distillation
+but still collapses to 9.60 under DQN, cleanly isolating the reward-extraction
+bottleneck: the VQC can represent a perfect policy but DQN cannot extract it at
+this training budget.
+\end{abstract}
+
+\keywords{Quantum Reinforcement Learning, Variational Quantum Circuits, Deep Q-Learning, CartPole-v1, Dueling DQN, Double DQN}
+
+\section{Introduction}
+\input{sections/01_introduction}
+
+\section{Background and Related Work}
+\input{sections/02_related_work}
+
+\section{Methodology}
+\input{sections/03_methodology}
+
+\section{Experimental Setup}
+\input{sections/04_experimental_setup}
+
+\section{Results and Discussion}
+\input{sections/05_results}
+
+\section{Limitations}
+\input{sections/06_limitations}
+
+\section{Conclusion}
+\input{sections/07_conclusion}
+
+\bibliographystyle{sbc}
+\footnotesize
+\bibliography{references}
+
+\end{document}

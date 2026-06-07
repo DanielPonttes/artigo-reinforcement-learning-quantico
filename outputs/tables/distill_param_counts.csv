@@ -1,0 +1,5 @@
+config,experiment,agent,env,trainable_parameters,all_parameters
+configs/cartpole_vqc_l3_distill.yaml,cartpole_vqc_l3_distill,dqn_vqc,CartPole-v1,46,46
+configs/cartpole_mlp_46_distill.yaml,cartpole_mlp_46_distill,dqn_mlp,CartPole-v1,44,44
+configs/cartpole_vqc_l1_fuzzy_membership_distill.yaml,cartpole_vqc_l1_fuzzy_membership_distill,dqn_vqc,CartPole-v1,22,22
+configs/cartpole_mlp_fuzzy_membership_distill.yaml,cartpole_mlp_fuzzy_membership_distill,dqn_mlp,CartPole-v1,23,23

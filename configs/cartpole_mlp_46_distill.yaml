@@ -1,0 +1,8 @@
+experiment: cartpole_mlp_46_distill
+env_id: CartPole-v1
+feature_mode: raw_normalized
+agent: dqn_mlp
+model:
+  hidden_sizes: [6]
+outputs_dir: outputs
+

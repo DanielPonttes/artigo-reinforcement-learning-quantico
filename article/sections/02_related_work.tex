@@ -1,0 +1,59 @@
+Reinforcement learning~\cite{sutton2018rl} formalizes sequential decision-making
+as a Markov Decision Process $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$, where
+an agent interacts with an environment by observing state $s \in \mathcal{S}$,
+taking action $a \in \mathcal{A}$, receiving reward $r$, and transitioning to
+$s'$ according to $P(s' | s, a)$. The objective is to maximize the expected
+discounted return $\mathbb{E}[\sum_t \gamma^t r_t]$.
+
+DQN~\cite{mnih2015dqn} approximates the optimal action-value function $Q^*(s,a)$
+with a neural network $Q_\theta(s,a)$ trained to minimize the Bellman error:
+$\mathcal{L} = \mathbb{E}[(r + \gamma \max_{a'} Q_{\theta^-}(s', a') -
+Q_\theta(s,a))^2]$, where $\theta^-$ denotes a periodically updated target
+network. Key innovations include experience replay and a separate target
+network to stabilize training. Extensions such as Double DQN~\cite{vanhasselt2016double}
+decouple action selection from evaluation by using the policy network for
+$\arg\max$ and the target network for value estimation, reducing overestimation
+bias. Dueling DQN~\cite{wang2016dueling} splits the Q-network into separate
+value $V(s)$ and advantage $A(s,a)$ streams, combining them as
+$Q(s,a) = V(s) + A(s,a) - \frac{1}{|\mathcal{A}|}\sum_{a'} A(s,a')$.
+
+Variational Quantum Circuits (VQCs) provide a different family of differentiable
+function approximators. A classical input is encoded into a quantum state via
+feature maps (e.g., angle encoding with $RY$ rotations on each qubit),
+trainable gates transform the state through layers of parametrized unitaries,
+and measurements (typically Pauli-Z expectation values) produce classical output
+features. Data re-uploading~\cite{perez2020reuploading} repeats the encoding
+step at each variational layer, increasing expressivity. VQCs face the barren
+plateau problem~\cite{mcclean2018barren}, where gradients vanish exponentially
+with circuit depth in randomly initialized circuits.
+
+Table~\ref{tab:related} summarizes prior work on VQC-based reinforcement
+learning. The present work differs by including Double DQN and Dueling DQN
+variants with a VQC backend, reporting batched QNode execution as a practical
+optimization, and including a supervised distillation experiment to isolate
+representational capacity from reward-based learning.
+
+\begin{table}[t]
+  \centering
+  \caption{Prior work on VQC-based reinforcement learning in low-dimensional environments.}
+  \label{tab:related}
+  \footnotesize
+  \begin{tabular}{lp{2.8cm}p{2cm}cc}
+    \hline
+    Work & Environment & Architecture & VQC-DQN & Other variants \\
+    \hline
+    Chen et al.~\cite{chen2020vqc} & CartPole, Acrobot, MountainCar & 4--8 qubits, 1--4 layers & Yes & No \\
+    Jerbi et al.~\cite{jerbi2021pqc} & CartPole, FrozenLake & Policy gradient VQC & No & Policy-based \\
+    Lockwood \& Si~\cite{lockwood2021rl} & CartPole & 4 qubits, 2 layers & Yes & No \\
+    Skolik et al.~\cite{skolik2022quantum} & CartPole, Acrobot & 4 qubits, data re-uploading & Yes & No \\
+    \textbf{This work} & CartPole & 4 qubits, L1/L3 & Yes & \textbf{Double, Dueling, Distill} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+The VQC-based DQN architecture in this paper follows the angle-encoding plus
+ring-CNOT design common to prior work, with the addition of batched QNode
+evaluation for simulation efficiency and systematic evaluation of DQN variants.
+The batched QNode optimization replaces per-sample circuit calls with a single
+batched call using PennyLane parameter broadcasting, a practical contribution
+relevant to any VQC-in-the-loop RL simulation.

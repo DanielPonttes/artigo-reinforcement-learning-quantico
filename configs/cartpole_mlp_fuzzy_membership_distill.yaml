@@ -1,0 +1,8 @@
+experiment: cartpole_mlp_fuzzy_membership_distill
+env_id: CartPole-v1
+feature_mode: fuzzy_membership_4
+agent: dqn_mlp
+model:
+  hidden_sizes: [3]
+outputs_dir: outputs
+

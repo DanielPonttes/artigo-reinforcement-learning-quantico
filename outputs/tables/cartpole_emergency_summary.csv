@@ -1,0 +1,3 @@
+agent,seeds,episodes,final_mean_reward_mean,final_mean_reward_std,best_reward_mean,total_wall_time_sec_mean
+dqn_mlp,3,50,22.03333333333333,2.4090108620206223,63.0,0.8259364123417375
+dqn_vqc,3,50,19.099999999999998,5.173973328110612,63.0,147.99354998367684

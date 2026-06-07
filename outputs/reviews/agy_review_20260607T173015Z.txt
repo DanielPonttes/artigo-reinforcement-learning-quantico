@@ -1,0 +1,106 @@
+I will list the contents of the project directory to locate the paper, its sections, implementation, results, and the reviewer prompt.
+I will read the reviewer prompt file at [external_reviewer_prompt.md](file:///home/daniel/artigo-reinforcement-learning-quantico/outputs/reviews/external_reviewer_prompt.md) to understand the guidelines for this review.
+I will list the files in the `article/sections` directory to see the paper structure.
+I will view the main LaTeX file `article/main.tex` to understand the main document structure and layout.
+I will read the introduction file `article/sections/01_introduction.tex`.
+I will view the related work section.
+I will view the methodology section.
+I will view the experimental setup section.
+I will view the results and discussion section.
+I will view the limitations section.
+I will view the conclusion section.
+I will list the contents of the `src/qrl` directory to see the codebase structure.
+I will list the contents of the `scripts` directory to understand how training and evaluations are run.
+I will list the contents of the `outputs` directory to see what artifacts, tables, figures, or results are stored there.
+I will list the tables directory.
+I will list the results directory.
+I will list the contents of the `src/qrl/models` directory.
+I will list the contents of the `src/qrl/training` directory.
+I will view the contents of the VQC model implementation [vqc.py](file:///home/daniel/artigo-reinforcement-learning-quantico/src/qrl/models/vqc.py).
+I will run the test suite to verify the current tests and check if everything passes.
+I will run the test suite using the python environment in the workspace.
+I will check if pytest is available via python3.
+I will list the `.venv` directory to see if it is a python virtual environment and where its binaries are.
+I will list the `.venv/bin` directory to locate the pytest binary.
+I will check the installed packages in the virtual environment to see if pytest or other test packages are available under a different name.
+I will list the contents of the `tests` directory.
+I will try running the tests using python's built-in `unittest` module.
+I will check the contents of [smoke_test.py](file:///home/daniel/artigo-reinforcement-learning-quantico/tests/smoke_test.py).
+I will view the contents of [test_training.py](file:///home/daniel/artigo-reinforcement-learning-quantico/tests/test_training.py).
+I will run both test scripts using the virtualenv python interpreter.
+I will view the training logic in [dqn.py](file:///home/daniel/artigo-reinforcement-learning-quantico/src/qrl/training/dqn.py) to see how the DQN updates, exploration, and parameter handling are set up.
+I will view [mlp.py](file:///home/daniel/artigo-reinforcement-learning-quantico/src/qrl/models/mlp.py) to check the MLP Q-network implementation.
+I will view [preprocessing.py](file:///home/daniel/artigo-reinforcement-learning-quantico/src/qrl/envs/preprocessing.py) to see how observations are transformed, especially the fuzzy membership representation.
+I will view the fuzzy teacher distillation script [train_fuzzy_distill.py](file:///home/daniel/artigo-reinforcement-learning-quantico/scripts/train_fuzzy_distill.py) to see how imitation learning is performed.
+I will check the final fuzzy scenario table to see the results.
+I will list the `configs` directory to see all the experimental configurations.
+I will view the contents of the VQC L3 fuzzy membership distillation config to see its parameters.
+I will view `cartpole_vqc_l3_distill.yaml` to compare it.
+I will view [build_fuzzy_final_table.py](file:///home/daniel/artigo-reinforcement-learning-quantico/scripts/build_fuzzy_final_table.py) to check how the table was generated and what it includes.
+I will view the configuration file of the `Distill VQC L3` run to check its input features.
+I will view `fuzzy_distill_dqn_vqc_seed0_20260607T190408Z_summary.json` to understand the experimental setup of this VQC L3 run.
+I will view the first few lines of the CSV file for the `Distill VQC L3` run to see its configuration fields.
+I will perform a search for files containing `vqc_l3` in the results directory to verify if L3 was run with raw or fuzzy membership inputs.
+I will search for `vqc_l3` in the `configs/` directory to see the configurations.
+I will search for `distill` in the outputs results to see all distillation runs and check what files exist.
+I will search the results directory for any files mentioning `cartpole_vqc_l3_fuzzy_membership_distill` or `cartpole_vqc_l3_distill`.
+I will search the results directory for `cartpole_vqc_l3` to see if it is referenced in the output json/csv summaries.
+I will search the entire repository for references to `cartpole_vqc_l3` to see where it appears.
+I will list the contents of the `outputs/reviews` directory to see if there are any existing review files.
+I will view the external review summary file to see what comments or reviews are already summarized.
+I will view [fuzzy_distillation_followup_prompt.md](file:///home/daniel/artigo-reinforcement-learning-quantico/outputs/reviews/fuzzy_distillation_followup_prompt.md) to understand the follow-up requirements.
+I will view [fuzzy_quantum_gain_prompt.md](file:///home/daniel/artigo-reinforcement-learning-quantico/outputs/reviews/fuzzy_quantum_gain_prompt.md).
+I will view the contents of the previous review draft [agy_review_20260607T173015Z.txt](file:///home/daniel/artigo-reinforcement-learning-quantico/outputs/reviews/agy_review_20260607T173015Z.txt) to understand what was assessed in that step.
+I will view [claude_review_20260607T173013Z.txt](file:///home/daniel/artigo-reinforcement-learning-quantico/outputs/reviews/claude_review_20260607T173013Z.txt) to see what Claude reviewed in the earlier step.
+I will list the contents of the artifacts directory to see if there are any files or subdirectories there.
+I will list the `outputs/figures` directory to see if the figures referenced in the paper exist and are complete.
+I will check [aggregate_results.py](file:///home/daniel/artigo-reinforcement-learning-quantico/scripts/aggregate_results.py) to see how the main results tables are generated.
+I will view [summarize_json_results.py](file:///home/daniel/artigo-reinforcement-learning-quantico/scripts/summarize_json_results.py) to check how results are loaded and mapped into final output files.
+I will create a comprehensive review report for the undergraduate paper in the artifacts directory. This report will detail the verdict, must-fix items, experiment priorities, suggested framing, and presentation recommendations.
+I have completed my review of the paper draft, results, and implementation. I have saved a detailed review report as an artifact at [paper_review.md](file:///home/daniel/.gemini/antigravity-cli/brain/7ed46412-31a2-4a63-8ec7-ef620143b5ff/paper_review.md). 
+
+Here is the blunt and practical summary of my review:
+
+### 1. Verdict: **Weak but Defensible (Major Revision)**
+The paper is appropriate for an ENIAC 2026 undergraduate track because it honest-reports a negative result (standard DQN with tiny 22-parameter MLP or VQC models fails below the random baseline in 100 episodes) and details simulated VQC timing costs/optimizations. 
+
+However, it is currently **weak** due to:
+1. **Abstract/Results Discrepancy**: The abstract/conclusion refers to "VQC L3 fuzzy membership: 321.87 ± 188.69", but the results table and codebase config `cartpole_vqc_l3_distill.yaml` verify that this was actually **L3 raw** (raw normalized features). 
+2. **Failure Clarification**: The "collapse below random" (~9.4 vs ~20.6) happens because the policy has learned to output constant actions, which causes the CartPole pole to fall immediately.
+3. **Fuzzy Distillation**: The perfect score (500.00) is achieved via **supervised policy cloning** (distillation), which must be clearly separated from DQN learning from reward.
+
+---
+
+### 2. Must-Fix Items Before Submission
+* **Fix Abstract vs. Table Mismatch**: Correct the claim that L3 achieved 321.87 with fuzzy membership. In reality, it was with raw normalized features.
+* **Integrate official SBC template**: Replace the dummy article setup in [main.tex](file:///home/daniel/artigo-reinforcement-learning-quantico/article/main.tex) with the official SBC template before building the final PDF.
+* **Remove TODO blocks**: Resolve the placeholder `% TODO: add verified citations before submission.` in [02_related_work.tex](file:///home/daniel/artigo-reinforcement-learning-quantico/article/sections/02_related_work.tex) by citing standard QRL/VQC literature.
+* **Explain the RL failure mechanism**: Clarify that a score of ~9.4 means the policy collapsed to a constant action, worse than a random policy alternating actions.
+
+---
+
+### 3. Experiment Priority List
+
+1. **Priority 1 (Critical)**: Run the actual `cartpole_vqc_l3_fuzzy_membership_distill.yaml` configuration.
+   * *Expected Benefit*: Corrects the mismatch in the abstract. Verifies if L3 VQC can achieve 500.00 with membership features or if gradient degradation occurs.
+   * *Approx. Cost*: Very Low (takes ~4 mins on CPU).
+2. **Priority 2 (High)**: Extended training (500+ episodes) for L1 configurations.
+   * *Expected Benefit*: Distinguishes whether the failure of L1 models is due to the parameter budget (22/23 parameters) or simply the short 100-episode training limit.
+   * *Approx. Cost*: Low-Medium (~2.5 mins total for 3 seeds of VQC L1).
+3. **Priority 3 (Medium)**: Increase seeds to 5 or 10.
+   * *Expected Benefit*: Standard statistical rigor for RL results.
+   * *Approx. Cost*: Low (~1 min).
+
+---
+
+### 4. Suggested Paper Framing
+Frame the paper as a **viability, capacity, and cost boundary study**:
+* **The representation bottleneck**: Shows that reward-only DQN value learning is unstable and sample-inefficient with tiny models.
+* **The capacity proof**: Highlight that the same 22-parameter VQC **can** represent a perfect controller under supervised imitation learning with clean fuzzy membership inputs ([preprocessing.py](file:///home/daniel/artigo-reinforcement-learning-quantico/src/qrl/envs/preprocessing.py#L36)). The bottleneck is thus the sample efficiency of the RL pipeline under extreme parameter constraints, not the expressivity of the VQC architecture.
+
+---
+
+### 5. Presentation Recommendations
+* Make row labels in Table 3 consistent with the text (explicitly state `Raw Normalized` or `Fuzzy Membership`).
+* Explicitly state that the VQC simulation timing overhead (e.g. 5x slower) is a CPU simulation artifact, not a physical quantum device limitation.
+* Keep [vqc_l1_circuit.png](file:///home/daniel/artigo-reinforcement-learning-quantico/outputs/figures/vqc_l1_circuit.png) as it clearly shows the architecture of the [VQCQNetwork](file:///home/daniel/artigo-reinforcement-learning-quantico/src/qrl/models/vqc.py#L9).

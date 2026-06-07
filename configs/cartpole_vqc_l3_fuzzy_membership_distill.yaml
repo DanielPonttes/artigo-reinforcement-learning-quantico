@@ -1,0 +1,14 @@
+experiment: cartpole_vqc_l3_fuzzy_membership_distill
+env_id: CartPole-v1
+feature_mode: fuzzy_membership_4
+agent: dqn_vqc
+model:
+  n_qubits: 4
+  n_layers: 3
+  encoding: angle
+  data_reuploading: true
+  entanglement: ring_cnot
+  readout: pauli_z_linear
+  backend: default.qubit
+outputs_dir: outputs
+

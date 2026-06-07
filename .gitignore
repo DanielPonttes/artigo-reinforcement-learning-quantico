@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.antigravitycli/
+outputs/results/
+outputs/checkpoints/
+outputs/videos/
+outputs/figures/*.png
+article/main.pdf
+article/main.aux
+article/main.log
+article/main.bbl
+article/main.blg
+article/main.out
+*.zip

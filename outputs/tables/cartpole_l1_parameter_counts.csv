@@ -1,0 +1,3 @@
+config,experiment,agent,env,trainable_parameters,all_parameters
+configs/cartpole_mlp_l1_final100.yaml,cartpole_mlp_l1_final100,dqn_mlp,CartPole-v1,23,23
+configs/cartpole_vqc_l1_final100.yaml,cartpole_vqc_l1_final100,dqn_vqc,CartPole-v1,22,22

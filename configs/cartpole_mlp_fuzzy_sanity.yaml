@@ -1,0 +1,22 @@
+experiment: cartpole_mlp_fuzzy_sanity
+env_id: CartPole-v1
+feature_mode: fuzzy_compact
+agent: dqn_mlp
+seeds: [0]
+episodes: 150
+evaluation_episodes: 20
+gamma: 0.99
+learning_rate: 0.001
+batch_size: 16
+learning_starts: 16
+buffer_size: 50000
+target_update_interval: 100
+epsilon_start: 1.0
+epsilon_end: 0.05
+epsilon_decay_steps: 1000
+gradient_clip_norm: 10.0
+log_interval_episodes: 25
+model:
+  hidden_sizes: [6]
+outputs_dir: outputs
+

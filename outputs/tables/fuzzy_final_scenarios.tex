@@ -1,0 +1,16 @@
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llrrrr@{}}
+\hline
+Scenario & Method & Params & Seeds & Eval reward & Time (s) \\
+\hline
+Random & Reference & 0 & 3 & 20.65 $\pm$ 2.01 & 0.01 \\
+Fuzzy teacher & Reference & 0 & 3 & 500.00 $\pm$ 0.00 & 0.14 \\
+Raw DQN-MLP & Reward RL & 23 & 3 & 9.42 $\pm$ 0.20 & 1.72 \\
+Raw DQN-VQC L1 & Reward RL & 22 & 3 & 9.45 $\pm$ 0.18 & 75.97 \\
+Distill MLP mem. & Fuzzy distill & 23 & 3 & 440.72 $\pm$ 102.68 & 92.25 \\
+Distill VQC L1 raw & Fuzzy distill & 22 & 3 & 96.53 $\pm$ 38.13 & 87.44 \\
+Distill VQC L1 mem. & Fuzzy distill & 22 & 3 & 500.00 $\pm$ 0.00 & 165.91 \\
+Distill VQC L3 raw & Fuzzy distill & 46 & 3 & 321.87 $\pm$ 188.69 & 241.26 \\
+\hline
+\end{tabular}

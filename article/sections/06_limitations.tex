@@ -1,0 +1,28 @@
+This study has several limitations. First, the VQC was simulated classically;
+therefore, wall-clock time does not represent execution on quantum hardware.
+Second, the experiment uses only CartPole-v1 and a small number of seeds
+(5 for main 100-episode runs, 3 for the extended 500-episode and DQN variant
+runs) due to the submission timeline. Third, the parameter budget is extremely small, which
+makes the comparison controlled but also limits the representational capacity
+of both agents. In the main experiment, both learned agents perform below a
+random policy, so the results characterize a failure regime rather than a
+successful policy-learning regime. Fourth, only a shallow VQC (L1) is used in
+the main experiment. Deeper circuits may be more expressive, but they also
+increase simulation cost and may suffer from barren plateaus~\cite{mcclean2018barren,cerezo2021cost}
+in gradient-based optimization. Fifth, the timing comparison between MLP
+(GPU) and VQC (CPU) conflates hardware and simulation overheads; the reported
+VQC time multipliers should be interpreted as upper bounds, not as precise
+quantum-vs-classical scaling.
+
+The results should therefore be interpreted as a small controlled empirical
+study, not as evidence for or against quantum advantage in reinforcement
+learning.
+
+The fuzzy-teacher distillation experiment has a different status from the DQN
+experiments. It demonstrates that small models, including a VQC, can imitate a
+useful fuzzy controller when aided by domain-informed fuzzy membership features,
+but under raw features the VQC fails even in supervised optimization. Therefore,
+the distillation results measure representation quality under structured
+features, not DQN learning from reward. The fuzzy membership representation
+avoids direct action-recommendation encoding, but it is still a domain-informed
+representation and should be reported as such.

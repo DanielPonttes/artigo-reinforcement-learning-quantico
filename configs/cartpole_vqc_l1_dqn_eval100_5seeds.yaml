@@ -1,0 +1,23 @@
+experiment: cartpole_vqc_l1_dqn_eval100_5seeds
+env_id: CartPole-v1
+agent: dqn_vqc
+seeds: [0, 1, 2, 4, 7]
+episodes: 100
+evaluation_episodes: 20
+gamma: 0.99
+learning_rate: 0.001
+batch_size: 16
+learning_starts: 16
+buffer_size: 50000
+target_update_interval: 100
+epsilon_start: 1.0
+epsilon_end: 0.05
+epsilon_decay_steps: 2000
+gradient_clip_norm: 10.0
+log_interval_episodes: 10
+model:
+  n_qubits: 4
+  n_layers: 1
+  backend: default.qubit
+  data_reuploading: true
+outputs_dir: outputs

@@ -1,0 +1,30 @@
+This paper evaluated a DQN-VQC agent against a parameter-matched MLP-DQN
+baseline on CartPole-v1. We summarize findings against four research questions.
+
+\textbf{RQ1.} Under a 22--23 parameter budget and 100 training episodes,
+DQN-MLP and DQN-VQC are indistinguishable under 5 seeds (both $\approx 9.4$,
+below random at 20.65). Extended 500-episode training recovered learning in 1
+of 3 MLP seeds (greedy 69.45) while VQC remained below random.
+
+\textbf{RQ2.} Double and Dueling DQN did not improve outcomes at 100 episodes;
+all variants collapsed to the same deterministic policy. Training budget, not
+the value-estimation technique, dominates results at this scale.
+
+\textbf{RQ3.} Batched QNode execution via PennyLane parameter
+broadcasting~\cite{bergholm2018pennylane} reduced VQC simulation overhead from
+$44\times$ to $5\times$ relative to MLP (both on CPU). The multiplier conflates
+PyTorch-vs-simulator overheads.
+
+\textbf{RQ4.} Under matched supervised protocols, MLP L1 represents the teacher
+from raw features (500.00, 5 seeds) while VQC L1 does not (96.53). VQC L3 raw
+reaches 321.87 $\pm$ 188.69, showing depth helps. With fuzzy membership
+features (near-explicit encoding of the teacher's boundary), VQC L1 and L3
+achieve 500.00. Critically, VQC L1 DQN with the same fuzzy membership features
+collapses to 9.60 $\pm$ 0.65 (5 seeds), indistinguishable from raw-feature DQN.
+This isolates the bottleneck: the VQC can represent a perfect policy under
+supervised optimization but cannot extract it via DQN reward signals at this
+training budget.
+
+Future work should extend to additional environments, increase seeds further,
+and investigate hybrid strategies combining fuzzy-guided exploration with
+curriculum learning for small VQC models.

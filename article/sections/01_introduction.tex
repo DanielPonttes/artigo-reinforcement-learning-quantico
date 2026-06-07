@@ -1,0 +1,65 @@
+Deep Reinforcement Learning (DRL) combines reinforcement learning
+\cite{sutton2018rl} with function approximation and has become a standard
+approach for learning control policies from interaction data. In Deep
+Q-Learning (DQN)~\cite{mnih2015dqn}, a neural network is used to approximate
+action-value functions, making it possible to act in environments with
+continuous or high-dimensional observations. The DQN framework has been
+extended with techniques such as Double Q-Learning~\cite{vanhasselt2016double}
+to reduce overestimation bias and Dueling architectures~\cite{wang2016dueling}
+to improve representation efficiency. Further improvements~\cite{hessel2018rainbow}
+include prioritized replay and distributional RL; this work focuses on Double
+and Dueling as the most architecture-relevant extensions for VQC-based Q-functions.
+
+In parallel, Variational Quantum Circuits (VQCs), also known as parametrized
+quantum circuits, have been studied as trainable models for near-term quantum
+machine learning. VQCs encode classical data into a quantum state, apply
+sequences of trainable unitary transformations, and extract classical outputs
+via measurement. Their differentiability through parameter-shift rules~\cite{schuld2019parameter}
+or backpropagation~\cite{perez2020reuploading} makes them compatible with
+gradient-based optimization in standard deep learning frameworks.
+
+Recent work has investigated replacing classical neural networks with VQCs in
+reinforcement learning~\cite{chen2020vqc,jerbi2021pqc,skolik2022quantum}.
+These studies suggest that VQCs can serve as Q-value approximators in DQN-style
+algorithms, though the conditions under which they offer practical benefits
+remain unclear, particularly under tight parameter budgets.
+
+This work evaluates a conservative question: if the Q-network of a DQN agent is
+replaced by a small VQC, and the classical baseline is constrained to a similar
+number of trainable parameters, how do the two agents compare in sample
+efficiency, stability, and training time on a simple control task?
+
+The specific research questions are:
+
+\begin{enumerate}
+  \item Under a matched parameter budget of approximately 22--23 trainable
+        parameters, do DQN-MLP and DQN-VQC agents show distinguishable
+        performance on CartPole-v1?
+  \item Do Double DQN and Dueling DQN variants alter the relative ranking
+        between classical and quantum Q-functions at this budget?
+  \item What is the practical simulation cost of using a VQC as a Q-function
+        approximator, and can batched circuit evaluation reduce this overhead?
+  \item To what extent does the representational capacity of small VQC models
+        exceed what the DQN reward signal can effectively exploit, as measured
+        by supervised distillation from a known-good teacher?
+\end{enumerate}
+
+The goal is not to claim quantum advantage. The experiments are performed with
+a classical simulator and a small number of qubits. Instead, the contribution
+is a controlled implementation and empirical comparison of a DQN-VQC agent
+against a parameter-matched MLP-DQN baseline, including Double and Dueling
+variants with VQC backends, a batched QNode optimization that substantially
+reduces simulation overhead, a transparent report of negative or inconclusive
+results, a supervised distillation experiment isolating representational
+capacity from reward-based learning, and a fully reproducible codebase with
+YAML-configurable experiments and comprehensive tests.
+
+This framing is important because small simulated VQCs are not expected to
+outperform classical networks in this setting. The relevant question is whether
+the hybrid agent can be integrated into a standard DQN workflow and what
+practical costs or instabilities appear under a controlled parameter budget.
+The paper is organized as follows. Section~2 reviews background and related
+work. Section~3 describes the methodology, including DQN training, VQC
+architecture, and DQN variants. Section~4 presents the experimental setup.
+Section~5 reports and discusses the results. Section~6 lists limitations,
+and Section~7 concludes.
