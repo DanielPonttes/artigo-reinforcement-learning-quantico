@@ -1,31 +1,30 @@
-Reinforcement learning~\cite{sutton2018rl} formalizes sequential decision-making
-as a Markov Decision Process $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$, where
-an agent interacts with an environment by observing state $s \in \mathcal{S}$,
-taking action $a \in \mathcal{A}$, receiving reward $r$, and transitioning to
-$s'$ according to $P(s' | s, a)$. The objective is to maximize the expected
-discounted return $\mathbb{E}[\sum_t \gamma^t r_t]$.
+Reinforcement Learning (RL)~\cite{sutton2018rl} is a framework where an agent
+learns by interacting with an environment: at each step, it observes the current
+state, chooses an action, receives a reward, and transitions to a new state.
+The goal is to maximize the cumulative reward over time.
 
-DQN~\cite{mnih2015dqn} approximates the optimal action-value function $Q^*(s,a)$
-with a neural network $Q_\theta(s,a)$ trained to minimize the Bellman error:
-$\mathcal{L} = \mathbb{E}[(r + \gamma \max_{a'} Q_{\theta^-}(s', a') -
-Q_\theta(s,a))^2]$, where $\theta^-$ denotes a periodically updated target
-network. Key innovations include experience replay and a separate target
-network to stabilize training. Extensions such as Double DQN~\cite{vanhasselt2016double}
-decouple action selection from evaluation by using the policy network for
-$\arg\max$ and the target network for value estimation, reducing overestimation
-bias. Dueling DQN~\cite{wang2016dueling} splits the Q-network into separate
-value $V(s)$ and advantage $A(s,a)$ streams, combining them as
-$Q(s,a) = V(s) + A(s,a) - \frac{1}{|\mathcal{A}|}\sum_{a'} A(s,a')$.
+Deep Q-Learning (DQN)~\cite{mnih2015dqn} solves this by training a neural network
+to predict the quality of each possible action in a given state — the so-called
+$Q$-value. During training, the agent stores its experiences $(s, a, r, s')$ in
+a replay buffer. Periodically, it samples a batch of past experiences and updates
+the network to make its $Q$-value predictions closer to the Bellman target:
+$r + \gamma \max_{a'} Q(s', a')$, i.e., immediate reward plus the best possible
+future value. Two mechanisms stabilize this process: a separate \emph{target
+network} that changes slowly, and \emph{experience replay} that breaks
+correlations between consecutive samples. Extensions such as Double
+DQN~\cite{vanhasselt2016double} reduce overestimation by using separate networks
+for action selection and evaluation, while Dueling DQN~\cite{wang2016dueling}
+splits the output into a state-value stream and an action-advantage stream for
+more efficient learning.
 
-Variational Quantum Circuits (VQCs) provide a different family of differentiable
-function approximators. A classical input is encoded into a quantum state via
-feature maps (e.g., angle encoding with $RY$ rotations on each qubit),
-trainable gates transform the state through layers of parametrized unitaries,
-and measurements (typically Pauli-Z expectation values) produce classical output
-features. Data re-uploading~\cite{perez2020reuploading} repeats the encoding
-step at each variational layer, increasing expressivity. VQCs face the barren
-plateau problem~\cite{mcclean2018barren}, where gradients vanish exponentially
-with circuit depth in randomly initialized circuits.
+Variational Quantum Circuits (VQCs) are the quantum counterpart of neural
+networks: classical data is encoded into a quantum state via rotation gates,
+trainable gates transform the state through repeated layers, and measurements
+extract classical output features. Unlike classical networks, VQCs suffer from
+the barren plateau problem~\cite{mcclean2018barren,cerezo2021cost}, where
+gradients vanish exponentially with circuit size, making training difficult.
+Data re-uploading~\cite{perez2020reuploading} — repeating the encoding at each
+layer — increases expressivity by giving the circuit more access to the input.
 
 Table~\ref{tab:related} summarizes prior work on VQC-based reinforcement
 learning. The present work differs by including Double DQN and Dueling DQN

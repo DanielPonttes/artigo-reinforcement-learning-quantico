@@ -17,13 +17,14 @@ PyTorch-vs-simulator overheads.
 
 \textbf{RQ4.} Under matched supervised protocols, MLP L1 represents the teacher
 from raw features (500.00, 5 seeds) while VQC L1 does not (96.53). VQC L3 raw
-reaches 321.87 $\pm$ 188.69, showing depth helps. With fuzzy membership
-features (near-explicit encoding of the teacher's boundary), VQC L1 and L3
-achieve 500.00. Critically, VQC L1 DQN with the same fuzzy membership features
-collapses to 9.60 $\pm$ 0.65 (5 seeds), indistinguishable from raw-feature DQN.
-This isolates the bottleneck: the VQC can represent a perfect policy under
-supervised optimization but cannot extract it via DQN reward signals at this
-training budget.
+reaches 321.87, showing depth helps. With fuzzy membership features, VQC L1 and
+L3 achieve 500.00. Critically, VQC L1 DQN with the same features collapses to
+9.60 (5 seeds), indistinguishable from raw-feature DQN. Since the MLP also fails
+under DQN despite solving raw-feature distillation (500.00), the bottleneck
+is not VQC-specific: it is a general inability of the DQN reward signal — at
+this budget, with this epsilon schedule, on this environment — to extract
+policies that the models demonstrably can represent under supervised
+optimization.
 
 Future work should extend to additional environments, increase seeds further,
 and investigate hybrid strategies combining fuzzy-guided exploration with
