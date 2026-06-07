@@ -5,6 +5,13 @@ Episodes terminate when the pole angle exceeds $\pm 12^\circ$, the cart position
 exceeds $\pm 2.4$, or 500 steps are reached. The reward is $+1$ per step,
 making the maximum episode return 500.
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\linewidth]{../outputs/figures/cartpole_screenshot.png}
+  \caption{CartPole-v1 environment. The goal is to balance the pole by moving the cart. The heuristic policy (shown) achieves the maximum 500-step return.}
+  \label{fig:cartpole}
+\end{figure}
+
 Both agents use the hyperparameters listed in Table~\ref{tab:hparams}.
 
 \begin{table}[t]
