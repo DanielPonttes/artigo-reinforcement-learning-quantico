@@ -170,27 +170,7 @@ with DQN on fuzzy membership features (the same representation that enables
 
 This result cleanly isolates the training-signal bottleneck: the VQC CAN
 represent a perfect policy under fuzzy membership features when trained via
-supervised distillation (500.00), but CANNOT extract it via DQN reward
-signals (9.40). The DQN failure for VQC is therefore not a representational
-capacity problem; it is a reward-extraction problem. The classical MLP, in
-contrast, CAN represent the policy from raw features under supervised training
-(500.00), but also fails to extract it via DQN (9.42). Both model classes
-suffer from DQN's inability to extract the policy at this training budget,
-independent of their representational adequacy.
-
-\subsection*{Per-seed analysis}
-
-The extended 500-episode runs reveal seed dependence. MLP seed 0 reaches greedy
-69.45 (17,646 steps); seeds 1--2 stay at $\approx$9.3. VQC seeds are uniformly
-poor (9.65--13.95). The 4000-step decay keeps $\epsilon > 0.5$ for $\approx$2000
-steps; seeds missing this window are trapped.
-
-The consistency of the collapse pattern — both agents across all DQN variants
-(standard, Dueling, Double-Dueling) reach identically poor greedy evaluation
-scores at 100 episodes — supports the conclusion that neither the classical
-vs.\ quantum choice nor the specific DQN variant matters at this budget. What
-matters is the interaction between the $\epsilon$ schedule and the small
-model's sensitivity.
+distillation (500.00), but CANNOT extract it via DQN reward signals (9.40).
 
 \subsection*{Practical implications}
 
